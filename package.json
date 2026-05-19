@@ -1,0 +1,38 @@
+{
+  "name": "ring-test-manager-web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "gcloud:login": "powershell -ExecutionPolicy Bypass -File ./scripts/gcloud-login.ps1",
+    "firebase:login": "npx -y firebase-tools@latest login",
+    "firebase:deploy": "npx -y firebase-tools@latest deploy",
+    "firebase:deploy:rules": "npx -y firebase-tools@latest deploy --only firestore:rules,storage",
+    "firebase:deploy:indexes": "npx -y firebase-tools@latest deploy --only firestore:indexes"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "firebase": "^12.13.0",
+    "firebase-admin": "^13.10.0",
+    "lucide-react": "^0.460.0",
+    "next": "^16.2.4",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "tailwind-merge": "^2.5.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.4",
+    "@types/node": "^22.9.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^9.14.0",
+    "eslint-config-next": "^16.2.4",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^4.2.4",
+    "typescript": "^5.6.3"
+  }
+}

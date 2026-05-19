@@ -1,0 +1,5 @@
+{
+  "npm.exclude": "**/.next/**",
+  "npm.autoDetect": "on",
+  "npm.packageManager": "npm"
+}
