@@ -90,7 +90,7 @@ export function LoginForm({
         </div>
       ) : null}
       <button type="submit" disabled={loading} className="btn-primary w-full">
-        {loading ? "Signing in…" : "Sign in"}
+        {loading ? "Signing in…" : "Sign In"}
       </button>
     </form>
   );
