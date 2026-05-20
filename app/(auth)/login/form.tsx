@@ -4,6 +4,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { use, useState } from "react";
 
+import { formatFirebaseAuthError } from "@/lib/firebase/auth-errors";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { establishServerSession } from "@/lib/firebase/session-client";
 import { SessionAccessError } from "@/lib/firebase/session-errors";
@@ -44,7 +45,7 @@ export function LoginForm({
       if (err instanceof SessionAccessError) {
         setError(err.message);
       } else {
-        setError(err instanceof Error ? err.message : "Sign in failed");
+        setError(formatFirebaseAuthError(err));
       }
       setLoading(false);
     }

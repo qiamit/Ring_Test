@@ -4,6 +4,7 @@ import { createUserWithEmailAndPassword, signOut, updateProfile } from "firebase
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { formatFirebaseAuthError } from "@/lib/firebase/auth-errors";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { establishServerSession } from "@/lib/firebase/session-client";
 import { SessionAccessError } from "@/lib/firebase/session-errors";
@@ -77,7 +78,7 @@ export function SignupForm() {
       } else if (msg.includes("too-many-requests")) {
         setError("Too many signup attempts. Please wait and try again.");
       } else {
-        setError(err instanceof Error ? err.message : "Signup failed");
+        setError(formatFirebaseAuthError(err));
       }
       setLoading(false);
     }

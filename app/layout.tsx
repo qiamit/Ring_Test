@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
 
+import { FirebaseRootProvider } from "@/components/firebase/firebase-root-provider";
+import { getFirebasePublicConfigForRuntime } from "@/lib/firebase/public-config";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,10 +21,12 @@ export const viewport: Viewport = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const firebaseConfig = getFirebasePublicConfigForRuntime();
+
   return (
     <html lang="en" className="dark">
       <body className="min-h-screen bg-[--color-background] text-[--color-foreground] antialiased">
-        {children}
+        <FirebaseRootProvider config={firebaseConfig}>{children}</FirebaseRootProvider>
       </body>
     </html>
   );
