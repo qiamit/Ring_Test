@@ -12,11 +12,13 @@ Next.js app for IS 1786 ring test measurement workflow, backed by **Firebase** (
 
 ## Local setup
 
-1. Copy environment variables:
+1. Copy the env template and add your keys locally (never commit `.env.local`):
 
    ```bash
    cp .env.example .env.local
    ```
+
+   Fill values from [Firebase Console](https://console.firebase.google.com/project/ring-test-manager/settings/general) → Your apps.
 
 2. In [Firebase Console](https://console.firebase.google.com/project/ring-test-manager), enable:
    - Authentication → Email/Password
@@ -56,12 +58,13 @@ Next.js app for IS 1786 ring test measurement workflow, backed by **Firebase** (
 - Deploy updated Firestore rules after pulling: `npm run firebase:deploy:rules`
 - Ensure **Blaze** billing is enabled if using Storage uploads.
 
-## Deploy
+## Deploy (App Hosting)
 
-```bash
-npm run build
-npm run firebase:deploy
-```
+Production environment variables live in **Firebase Console** only:
+
+[App Hosting → ring-manager-backend → Settings → Environment](https://console.firebase.google.com/project/ring-test-manager/apphosting)
+
+Push to `main` on GitHub to trigger a rollout. Do not put secrets in `apphosting.yaml` or `.env.example`.
 
 ## Project layout
 

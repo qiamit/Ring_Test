@@ -1,5 +1,7 @@
-# Firebase App Hosting — env for GitHub rollouts (ring-manager-backend)
-# https://firebase.google.com/docs/app-hosting/configure
+# Firebase App Hosting — ring-manager-backend
+# Environment variables are managed in Firebase Console (not in this file):
+# https://console.firebase.google.com/project/ring-test-manager/apphosting
+# → ring-manager-backend → Settings → Environment
 
 runConfig:
   cpu: 1
@@ -7,58 +9,3 @@ runConfig:
   minInstances: 0
   maxInstances: 10
   concurrency: 80
-
-env:
-  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    value: AIzaSyDiDwlirsZRl4i9ODXjwJuoP_RZMVEnlnM
-    availability:
-      - BUILD
-      - RUNTIME
-
-  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    value: ring-test-manager.firebaseapp.com
-    availability:
-      - BUILD
-      - RUNTIME
-
-  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    value: ring-test-manager
-    availability:
-      - BUILD
-      - RUNTIME
-
-  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    value: ring-test-manager.firebasestorage.app
-    availability:
-      - BUILD
-      - RUNTIME
-
-  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-    value: "859133829166"
-    availability:
-      - BUILD
-      - RUNTIME
-
-  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
-    value: 1:859133829166:web:c25c12b2055284144fffbf
-    availability:
-      - BUILD
-      - RUNTIME
-
-  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
-    value: G-1PCV5Z33E3
-    availability:
-      - BUILD
-      - RUNTIME
-
-  - variable: NEXT_PUBLIC_SITE_URL
-    value: https://ring-manager-backend--ring-test-manager.asia-southeast1.hosted.app
-    availability:
-      - BUILD
-      - RUNTIME
-
-  - variable: APP_OWNER_EMAIL
-    value: qicoding1@gmail.com
-    availability:
-      - BUILD
-      - RUNTIME
