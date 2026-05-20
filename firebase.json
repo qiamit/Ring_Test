@@ -1,4 +1,14 @@
 {
+  "apphosting": {
+    "backendId": "ring-manager-backend",
+    "rootDir": "/",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "Dummy Data/**"
+    ]
+  },
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"

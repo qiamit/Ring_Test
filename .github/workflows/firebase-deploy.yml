@@ -1,0 +1,27 @@
+# App Hosting deploys automatically when connected in Firebase Console (GitHub → ring-manager-backend).
+# This workflow only deploys Firestore/Storage rules on push. App code + env come from apphosting.yaml.
+
+name: Firebase Rules Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "firestore.rules"
+      - "firestore.indexes.json"
+      - "storage.rules"
+      - ".github/workflows/firebase-deploy.yml"
+  workflow_dispatch:
+
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Deploy Firestore and Storage rules
+        run: npx -y firebase-tools@latest deploy --only firestore:rules,storage --project ring-test-manager --non-interactive
