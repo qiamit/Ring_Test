@@ -66,6 +66,8 @@ Production environment variables live in **Firebase Console** only:
 
 Push to `main` on GitHub to trigger a rollout. Do not put secrets in `apphosting.yaml` or `.env.example`.
 
+Required console variables (including **`NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`** for image upload): see [docs/apphosting-environment.md](docs/apphosting-environment.md).
+
 ## Project layout
 
 ```

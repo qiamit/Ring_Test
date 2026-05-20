@@ -1,8 +1,13 @@
 import { getAdminStorage } from "@/lib/firebase/admin";
-import { firebasePublicConfig, STORAGE_PREFIXES } from "@/lib/firebase/config";
+import {
+  firebasePublicConfig,
+  resolveStorageBucket,
+  STORAGE_PREFIXES,
+} from "@/lib/firebase/config";
 
 function getDefaultBucket() {
-  return getAdminStorage().bucket(firebasePublicConfig.storageBucket);
+  const bucketName = resolveStorageBucket(firebasePublicConfig.projectId);
+  return getAdminStorage().bucket(bucketName);
 }
 
 export function formatStorageError(err: unknown): string {
@@ -23,7 +28,7 @@ export function formatStorageError(err: unknown): string {
 }
 
 export function getPublicStorageUrl(objectPath: string): string {
-  const bucket = firebasePublicConfig.storageBucket;
+  const bucket = resolveStorageBucket(firebasePublicConfig.projectId);
   return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(objectPath)}?alt=media`;
 }
 

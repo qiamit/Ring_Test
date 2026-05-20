@@ -3,7 +3,7 @@ import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import { getStorage, type Storage } from "firebase-admin/storage";
 
-import { firebasePublicConfig } from "@/lib/firebase/config";
+import { firebasePublicConfig, resolveStorageBucket } from "@/lib/firebase/config";
 
 let adminApp: App;
 
@@ -36,17 +36,19 @@ export function getAdminApp(): App {
     return adminApp;
   }
 
+  const storageBucket = resolveStorageBucket(firebasePublicConfig.projectId);
   const serviceAccount = loadServiceAccount();
   if (serviceAccount) {
     adminApp = initializeApp({
       credential: cert(serviceAccount as Parameters<typeof cert>[0]),
-      storageBucket: firebasePublicConfig.storageBucket,
+      projectId: firebasePublicConfig.projectId,
+      storageBucket,
     });
   } else {
     // Uses Application Default Credentials when deployed on Firebase / GCP
     adminApp = initializeApp({
       projectId: firebasePublicConfig.projectId,
-      storageBucket: firebasePublicConfig.storageBucket,
+      storageBucket,
     });
   }
   return adminApp;
