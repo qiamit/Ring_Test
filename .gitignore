@@ -7,47 +7,53 @@ node_modules/
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+.pnpm-store/
 .turbo/
 
 # Next.js
 .next/
+.swc/
 out/
 build/
 dist/
 
 # Testing
 coverage/
+.nyc_output/
 
 # TypeScript
 *.tsbuildinfo
 
 # Environment & secrets (never commit real keys)
 .env
-.env.local
-.env.*.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.production
-.env.example.local
-# Commit template only (empty placeholders — fill .env.local locally)
+.env.*
 !.env.example
 *.pem
+*.key
+*.p12
+*.secret
+secrets/
 *-firebase-adminsdk-*.json
 serviceAccount*.json
 firebase-service-account*.json
 credentials.json
+application_default_credentials.json
+gcloud-application-credentials.json
 
-# Firebase CLI / emulators
+# Firebase CLI / emulators / exports
 .firebase/
 firebase-debug.log*
 firestore-debug.log*
 ui-debug.log*
 pubsub-debug.log*
 database-debug.log*
+firestore_export/
+storage_export/
 
-# Vercel
+# Hosting / deploy tooling
 .vercel/
+.netlify/
+.apphosting/
 
 # Logs & debug
 *.log
@@ -63,6 +69,8 @@ yarn-error.log*
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+$RECYCLE.BIN/
+*.lnk
 
 # Editors (keep shared workspace settings)
 .idea/
@@ -71,5 +79,10 @@ Desktop.ini
 !.vscode/extensions.json
 .cursor/
 
-# Local-only project data
+# Temporary / local-only
+tmp/
+temp/
+*.tmp
+*.temp
+~*
 Dummy Data/
