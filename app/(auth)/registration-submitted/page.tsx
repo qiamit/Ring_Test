@@ -11,8 +11,8 @@ export default async function RegistrationSubmittedPage({
   const email = params.email?.trim();
 
   return (
-    <div className="card p-6 shadow-2xl shadow-blue-950/30">
-      <h2 className="text-xl font-semibold text-white">Registration submitted</h2>
+    <div className="card p-4 shadow-2xl shadow-blue-950/30 sm:p-6">
+      <h2 className="text-lg font-semibold text-white sm:text-xl">Registration submitted</h2>
       <p className="mt-3 text-sm text-slate-300">
         Your firm has been registered and is waiting for Super Admin approval.
         {email ? (

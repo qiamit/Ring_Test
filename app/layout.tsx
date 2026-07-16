@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  viewportFit: "cover",
   themeColor: "#0b1220",
 };
 
@@ -25,7 +25,7 @@ export default function RootLayout({
 
   return (
     <html lang="en" className="dark">
-      <body className="min-h-screen bg-[--color-background] text-[--color-foreground] antialiased">
+      <body className="min-h-dvh overflow-x-clip bg-[--color-background] text-[--color-foreground] antialiased">
         <FirebaseRootProvider config={firebaseConfig}>{children}</FirebaseRootProvider>
       </body>
     </html>

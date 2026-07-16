@@ -53,6 +53,7 @@ function mapTenantDoc(id: string, data: FirebaseFirestore.DocumentData): TenantR
     owner_email: (data.owner_email as string | null) ?? null,
     contact_name: (data.contact_name as string | null) ?? null,
     status: (data.status as OrganizationStatus) ?? "approved",
+    ai_enabled: data.ai_enabled === true,
     created_at: data.created_at as string,
     approved_at: (data.approved_at as string | null) ?? null,
     approved_by: (data.approved_by as string | null) ?? null,
@@ -93,6 +94,7 @@ export async function registerPendingOrganization(input: {
     owner_email: input.email?.trim().toLowerCase() ?? null,
     contact_name: input.contactName.trim(),
     status: "pending",
+    ai_enabled: false,
     created_at: now,
     approved_at: null,
     approved_by: null,
@@ -163,12 +165,12 @@ async function ensureApprovedOrgSettings(userId: string, tenantId: string): Prom
       outer_color: "#f472b6",
       diam_color: "#fb923c",
       thick_color: "#4ade80",
-      inner_width: 2,
-      outer_width: 2,
-      diam_width: 2,
-      thick_width: 2,
-      thickness_outer_gap_px: 2,
-      thickness_inner_gap_px: 2,
+      inner_width: 1,
+      outer_width: 1,
+      diam_width: 1,
+      thick_width: 1,
+      thickness_outer_gap_px: 1,
+      thickness_inner_gap_px: 1,
       company_logo_path: null,
       company_name: null,
       company_address: null,
@@ -400,4 +402,35 @@ export async function getAdminDashboardStats(): Promise<{
 
 export function isOrganizationApproved(org: TenantRecord | null): boolean {
   return org?.status === "approved";
+}
+
+export async function setOrganizationAiEnabled(
+  tenantId: string,
+  enabled: boolean,
+): Promise<void> {
+  await db().collection("tenants").doc(tenantId).update({
+    ai_enabled: enabled === true,
+  });
+}
+
+/** Firm users: visible when their approved org has AI enabled. Super Admin: always. */
+export async function isAiAnalysisEnabledForUser(
+  userId: string,
+  email?: string | null,
+): Promise<boolean> {
+  if (isAppOwnerEmail(email)) return true;
+
+  const owned = await getOrganizationForOwner(userId);
+  if (owned?.status === "approved" && owned.ai_enabled) return true;
+
+  const mem = await db().collection("tenant_memberships").where("user_id", "==", userId).get();
+  for (const doc of mem.docs) {
+    const tenantId = doc.data().tenant_id as string | undefined;
+    if (!tenantId) continue;
+    const tenant = await db().collection("tenants").doc(tenantId).get();
+    if (!tenant.exists) continue;
+    const data = tenant.data()!;
+    if (data.status === "approved" && data.ai_enabled === true) return true;
+  }
+  return false;
 }

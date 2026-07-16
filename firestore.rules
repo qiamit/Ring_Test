@@ -30,6 +30,10 @@ service cloud.firestore {
         && tenantDoc(tenantId).data.status == 'approved';
     }
 
+    match /app_config/{docId} {
+      allow read, write: if isAppOwner();
+    }
+
     match /user_profiles/{userId} {
       allow read, write: if isAppOwner() || isOwner(userId);
     }

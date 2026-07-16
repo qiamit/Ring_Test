@@ -17,10 +17,11 @@ export default async function ReportsPage({
   const user = await getSessionUser();
   if (!user) return null;
 
-  const { rows, total: totalRecords, error } = await listTestsForUser(user.uid, {
+  const { rows, total: totalRecords, error, scope } = await listTestsForUser(user.uid, {
     q,
     page: currentPage,
     pageSize,
+    email: user.email,
   });
   const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
   const prevPage = Math.max(1, currentPage - 1);
@@ -36,14 +37,21 @@ export default async function ReportsPage({
 
   return (
     <div className="space-y-4">
-      <form className="card flex flex-wrap items-center gap-2 p-3">
+      {scope === "all" ? (
+        <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm text-blue-200">
+          Super Admin view: showing reports from all organizations ({totalRecords} total).
+        </div>
+      ) : null}
+
+      <form className="card flex flex-col gap-2 p-3 sm:flex-row sm:flex-wrap sm:items-center">
         <input
           name="q"
           defaultValue={q}
           placeholder="Search by sample, batch, or tester…"
-          className="input"
+          className="input min-w-0 flex-1 sm:min-w-[12rem]"
         />
         <input type="hidden" name="page" value="1" />
+        <div className="flex flex-wrap items-center gap-2">
         <button type="submit" className="btn-secondary">
           Search
         </button>
@@ -52,9 +60,10 @@ export default async function ReportsPage({
             Clear
           </Link>
         ) : null}
-        <span className="ml-auto rounded-md border border-[--color-border] bg-slate-900/40 px-3 py-1.5 text-xs text-slate-300">
+        <span className="rounded-md border border-[--color-border] bg-slate-900/40 px-3 py-1.5 text-xs text-slate-300 sm:ml-auto">
           Total Records: <span className="font-semibold text-slate-100">{totalRecords}</span>
         </span>
+        </div>
       </form>
 
       {error ? (

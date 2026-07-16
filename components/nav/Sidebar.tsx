@@ -8,7 +8,6 @@ import {
   FileText,
   FlaskConical,
   LayoutDashboard,
-  PencilRuler,
   Settings,
 } from "lucide-react";
 
@@ -18,7 +17,6 @@ import { cn } from "@/lib/utils";
 const FIRM_NAV = [
   { href: "/new-test", label: "New Test", icon: FlaskConical },
   { href: "/reports", label: "Reports", icon: FileText },
-  { href: "/calibration", label: "Validation & Calibration", icon: PencilRuler },
   { href: "/settings", label: "Settings", icon: Settings },
   { href: "/help", label: "Help", icon: CircleHelp },
 ];
@@ -68,7 +66,7 @@ export function Sidebar({
   const homeHref = isSuperAdmin ? "/admin/dashboard" : "/new-test";
 
   return (
-    <aside className="no-print hidden min-h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-[--color-border] bg-[--color-surface] p-4 lg:flex">
+    <aside className="no-print sticky top-0 hidden h-dvh w-56 shrink-0 flex-col overflow-y-auto border-r border-[--color-border] bg-[--color-surface] p-4 xl:w-64 lg:flex">
       <Link href={homeHref} className="mb-6 flex items-center gap-2">
         <div className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 text-sm font-bold text-white">
           R
@@ -104,7 +102,7 @@ export function Sidebar({
             {fullName}
           </div>
         ) : null}
-        <div className="mb-3 rounded-full bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-200">
+        <div className="mb-3 rounded-full bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-200 break-anywhere">
           {email ?? "—"}
         </div>
         <SignOutButton className="btn-ghost w-full justify-center text-xs" />
@@ -118,8 +116,8 @@ export function MobileSidebar({ isSuperAdmin }: { isSuperAdmin?: boolean }) {
   const items = isSuperAdmin ? [...ADMIN_NAV, ...FIRM_NAV] : FIRM_NAV;
 
   return (
-    <nav className="no-print lg:hidden">
-      <div className="flex gap-2 overflow-x-auto p-3">
+    <nav className="no-print sticky top-0 z-20 border-b border-[--color-border] bg-[--color-surface]/95 backdrop-blur lg:hidden">
+      <div className="flex gap-2 overflow-x-auto overscroll-x-contain px-3 py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {items.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           return (
@@ -127,14 +125,14 @@ export function MobileSidebar({ isSuperAdmin }: { isSuperAdmin?: boolean }) {
               key={href}
               href={href}
               className={cn(
-                "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+                "flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11px] font-semibold transition-colors sm:px-3 sm:text-xs",
                 active
                   ? "border-blue-500/50 bg-blue-600/20 text-blue-200"
                   : "border-[--color-border] bg-[--color-surface] text-[--color-muted] hover:bg-slate-800 hover:text-white",
               )}
             >
-              <Icon size={14} />
-              <span>{label}</span>
+              <Icon size={14} className="shrink-0" />
+              <span className="whitespace-nowrap">{label}</span>
             </Link>
           );
         })}

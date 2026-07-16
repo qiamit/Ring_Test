@@ -4,9 +4,9 @@ import { SignupForm } from "./form";
 
 export default function SignupPage() {
   return (
-    <div className="card p-6 shadow-2xl shadow-blue-950/30">
-      <h2 className="mb-1 text-xl font-semibold text-white">Register your firm</h2>
-      <p className="mb-5 text-sm text-[--color-muted]">
+    <div className="card p-4 shadow-2xl shadow-blue-950/30 sm:p-6">
+      <h2 className="mb-1 text-lg font-semibold text-white sm:text-xl">Register your firm</h2>
+      <p className="mb-4 text-sm text-[--color-muted] sm:mb-5">
         Create an organization account. A Super Admin will approve your firm before you can sign in.
       </p>
       <SignupForm />

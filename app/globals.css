@@ -30,9 +30,17 @@
   border-color: var(--color-border);
 }
 
+html {
+  height: 100%;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 html,
 body {
-  height: 100%;
+  min-height: 100%;
+  min-height: 100dvh;
   background-color: var(--color-background);
   color: var(--color-foreground);
   font-family:
@@ -43,6 +51,24 @@ body {
     BlinkMacSystemFont,
     sans-serif;
   font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+body {
+  overflow-x: clip;
+}
+
+/* Notch / home-indicator safe areas (phones) */
+.safe-area-pad {
+  padding-top: max(1.5rem, env(safe-area-inset-top, 0px));
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+}
+
+/* Prevent long unbroken strings from blowing out layouts */
+.break-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 ::-webkit-scrollbar {
@@ -73,18 +99,26 @@ body {
 }
 
 .input {
-  height: 2.25rem;
+  height: 2.5rem;
   width: 100%;
+  max-width: 100%;
   border-radius: 0.5rem;
   border: 1px solid var(--color-border-strong);
   background-color: var(--color-input);
   padding-left: 0.75rem;
   padding-right: 0.75rem;
-  font-size: 0.875rem;
+  /* 16px on phones avoids iOS auto-zoom on focus */
+  font-size: 1rem;
   line-height: 1.25rem;
   color: var(--color-foreground);
   outline: none;
   transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+@media (min-width: 640px) {
+  .input {
+    height: 2.25rem;
+    font-size: 0.875rem;
+  }
 }
 .input::placeholder {
   color: var(--color-subtle);
@@ -433,17 +467,72 @@ body {
   font-size: 13px;
 }
 
+/* Report viewer options (Page / Print / Image settings) */
+#printable[data-show-title="0"] .report-opt-title {
+  display: none !important;
+}
+#printable[data-show-logo="0"] .report-opt-logo {
+  display: none !important;
+}
+#printable[data-show-signature="0"] .report-opt-signature {
+  display: none !important;
+}
+#printable[data-show-image="0"] .report-opt-image {
+  display: none !important;
+}
+
+#printable[data-font="small"] .print-sheet {
+  font-size: 92%;
+}
+#printable[data-font="small"] .sheet-title {
+  font-size: 24px;
+}
+#printable[data-font="small"] .sheet-table {
+  font-size: 11px;
+}
+#printable[data-font="large"] .print-sheet {
+  font-size: 108%;
+}
+#printable[data-font="large"] .sheet-title {
+  font-size: 34px;
+}
+#printable[data-font="large"] .sheet-table {
+  font-size: 13px;
+}
+
+#printable[data-image-size="small"] .sheet-image-box {
+  flex: 0 0 auto;
+  height: 140px;
+  min-height: 140px;
+}
+#printable[data-image-size="medium"] .sheet-image-box {
+  flex: 0 0 auto;
+  height: 220px;
+  min-height: 220px;
+}
+#printable[data-image-size="large"] .sheet-image-box {
+  flex: 0 0 auto;
+  height: 320px;
+  min-height: 320px;
+}
+#printable[data-image-size="fill"] .sheet-image-box {
+  flex: 1 1 0;
+  min-height: 180px;
+}
+
+#printable[data-image-fit="cover"] .sheet-image-box img.sheet-image,
+#printable[data-image-fit="cover"] .sheet-image {
+  object-fit: cover !important;
+}
+#printable[data-image-fit="contain"] .sheet-image-box img.sheet-image,
+#printable[data-image-fit="contain"] .sheet-image {
+  object-fit: contain !important;
+}
+
 /* Print styles for the report */
 @media print {
-  @page {
-    size: A4 portrait;
-    margin: 15mm 10mm 10mm 15mm; /* top right bottom left */
-  }
-
   html,
   body {
-    width: 210mm;
-    height: 297mm;
     overflow: hidden !important;
   }
 
@@ -460,8 +549,6 @@ body {
 
   #printable {
     width: 100%;
-    max-width: 185mm; /* 210mm - 15mm - 10mm */
-    min-height: calc(297mm - 25mm);
     margin: 0 auto !important;
     page-break-inside: avoid;
     break-inside: avoid;
@@ -498,9 +585,6 @@ body {
   .print-sheet {
     display: flex;
     flex-direction: column;
-    height: calc(297mm - 25mm);
-    max-height: calc(297mm - 25mm);
-    min-height: calc(297mm - 25mm);
     padding: 0; /* @page margins apply when printing */
     overflow: hidden;
   }

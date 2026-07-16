@@ -101,11 +101,35 @@ export interface TenantRecord {
   owner_email: string | null;
   contact_name: string | null;
   status: OrganizationStatus;
+  /** Super Admin can enable AI Analysis for this firm. */
+  ai_enabled: boolean;
   created_at: string;
   approved_at: string | null;
   approved_by: string | null;
   rejected_at: string | null;
   rejected_reason: string | null;
+}
+
+/** Global AI model settings — Super Admin only (`app_config/ai`). */
+export type AiProviderId = "openai" | "google" | "anthropic" | "custom";
+
+export interface AiConfigRecord {
+  provider: AiProviderId;
+  name: string;
+  model_id: string;
+  api_key: string;
+  updated_at: string;
+  updated_by: string | null;
+}
+
+/** Safe view for Super Admin UI (API key never sent in full after save). */
+export interface AiConfigPublic {
+  provider: AiProviderId;
+  name: string;
+  model_id: string;
+  api_key_set: boolean;
+  api_key_hint: string | null;
+  updated_at: string | null;
 }
 
 export interface TenantMembershipRecord {

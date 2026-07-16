@@ -18,8 +18,8 @@ const FEATURES = [
   },
   {
     icon: CircleHelp,
-    title: "Calibration",
-    description: "Linear mm/px and angular correction with auditable history.",
+    title: "Per-test Scale",
+    description: "Draw mm/px on each image so diameter and thickness stay accurate.",
   },
 ];
 
@@ -31,7 +31,7 @@ const HIGHLIGHTS = [
 
 export function AuthInfoPanel() {
   return (
-    <div className="relative flex min-h-svh w-full flex-col overflow-hidden bg-[#070d18] lg:min-h-screen">
+    <div className="relative flex h-full min-h-dvh w-full flex-col overflow-hidden bg-[#070d18]">
       <div
         className="pointer-events-none absolute inset-0 bg-gradient-to-br from-blue-600/10 via-transparent to-cyan-500/5"
         aria-hidden
@@ -54,26 +54,26 @@ export function AuthInfoPanel() {
         aria-hidden
       />
 
-      <div className="relative flex min-h-svh flex-1 flex-col px-8 py-10 sm:px-12 sm:py-14 lg:min-h-screen lg:px-16 lg:py-16 xl:px-20">
-        <header className="border-b border-white/10 pb-8">
+      <div className="relative flex min-h-0 flex-1 flex-col px-8 py-10 lg:px-12 lg:py-12 xl:px-16 xl:py-14">
+        <header className="shrink-0 border-b border-white/10 pb-6 xl:pb-8">
           <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/25 bg-blue-500/10 px-3 py-1 text-xs font-medium tracking-wide text-blue-200">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden />
             Reinforcement Steel Testing
           </div>
-          <h1 className="mt-6 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-[2.75rem] lg:leading-tight">
+          <h1 className="mt-5 text-3xl font-bold tracking-tight text-white xl:mt-6 xl:text-4xl 2xl:text-[2.75rem] 2xl:leading-tight">
             Ring Test Manager
           </h1>
-          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-slate-300/95">
+          <p className="mt-3 max-w-2xl text-base leading-relaxed text-slate-300/95 xl:mt-4 xl:text-lg">
             Enterprise-grade workflow for laboratories and testing firms — measure, validate, and
             report ring specimens in line with{" "}
             <span className="font-semibold text-white">IS 1786:2008</span>.
           </p>
 
-          <dl className="mt-8 flex flex-wrap gap-3">
+          <dl className="mt-6 flex flex-wrap gap-3 xl:mt-8">
             {HIGHLIGHTS.map(({ label, value }) => (
               <div
                 key={label}
-                className="min-w-[7.5rem] rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-sm"
+                className="min-w-[7rem] flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 backdrop-blur-sm sm:min-w-[7.5rem] sm:flex-none sm:px-4 sm:py-3"
               >
                 <dt className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                   {label}
@@ -84,30 +84,32 @@ export function AuthInfoPanel() {
           </dl>
         </header>
 
-        <div className="flex flex-1 flex-col justify-center py-10 lg:py-12">
+        <div className="flex min-h-0 flex-1 flex-col justify-center py-6 xl:py-10">
           <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
             Capabilities
           </p>
-          <ul className="mt-5 grid gap-4 sm:grid-cols-2">
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:mt-5 xl:gap-4">
             {FEATURES.map(({ icon: Icon, title, description }) => (
               <li
                 key={title}
-                className="group rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent p-5 transition-colors hover:border-blue-500/30 hover:bg-white/[0.05]"
+                className="group rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent p-4 transition-colors hover:border-blue-500/30 hover:bg-white/[0.05] xl:p-5"
               >
-                <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-600/20 text-blue-300 ring-1 ring-blue-500/25">
+                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600/20 text-blue-300 ring-1 ring-blue-500/25 xl:h-11 xl:w-11">
                   <Icon size={22} strokeWidth={1.75} />
                 </span>
-                <p className="mt-4 text-base font-semibold text-white">{title}</p>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-400">{description}</p>
+                <p className="mt-3 text-sm font-semibold text-white xl:mt-4 xl:text-base">{title}</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-400 xl:mt-1.5 xl:text-sm">
+                  {description}
+                </p>
               </li>
             ))}
           </ul>
         </div>
 
-        <footer className="mt-auto border-t border-white/10 pt-8">
+        <footer className="mt-auto shrink-0 border-t border-white/10 pt-6 xl:pt-8">
           <p className="text-sm leading-relaxed text-slate-500">
             Register your organization, await Super Admin approval, then sign in to run tests and
-            manage calibration, settings, and reports from one workspace.
+            manage settings and reports from one workspace.
           </p>
           <p className="mt-3 text-xs text-slate-600">
             © {new Date().getFullYear()} Ring Test Manager · Quality assurance for reinforcement

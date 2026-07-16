@@ -1,11 +1,21 @@
 "use client";
 
 import { Camera, Loader2, Save, Upload, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
 
-import { RingEditor } from "@/components/ring-editor/RingEditor";
+import {
+  RingEditor,
+  type RingEditorToolbarApi,
+  type RingEditorToolbarState,
+} from "@/components/ring-editor/RingEditor";
 import type { Circle, DiameterBox, RingResult } from "@/lib/analysis";
 import type { AnalysisResults } from "@/lib/firebase/types";
+import {
+  clearNewTestDraft,
+  loadNewTestDraft,
+  saveNewTestDraft,
+  type EditorGeometryDraft,
+} from "@/lib/new-test-draft";
 import { todayIso, timeNowHHMM } from "@/lib/utils";
 
 import { saveTest } from "./actions";
@@ -24,9 +34,11 @@ interface Defaults {
   thicknessInnerGapPx: number;
   units: string;
   style?: Partial<Style>;
+  aiAnalysisEnabled?: boolean;
 }
 
 export function NewTestClient({ defaults }: { defaults: Defaults }) {
+  const [draftReady, setDraftReady] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [imgDim, setImgDim] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
 
@@ -42,7 +54,12 @@ export function NewTestClient({ defaults }: { defaults: Defaults }) {
   const [operatorNameInput, setOperatorNameInput] = useState("");
   const [observationInput, setObservationInput] = useState("");
 
+  const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [analysisMounted, setAnalysisMounted] = useState(false);
+  const [resultsOpen, setResultsOpen] = useState(false);
+
   const [result, setResult] = useState<RingResult | null>(null);
+  const [geometry, setGeometry] = useState<EditorGeometryDraft | null>(null);
   const [editorMetrics, setEditorMetrics] = useState<{
     mmPerPx: number;
     thicknessMean: number | null;
@@ -84,8 +101,83 @@ export function NewTestClient({ defaults }: { defaults: Defaults }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const editorSnapshotRef = useRef<(() => string | null) | null>(null);
+  const editorToolbarApiRef = useRef<RingEditorToolbarApi | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const [editorToolbar, setEditorToolbar] = useState<RingEditorToolbarState>({
+    detectingAi: false,
+    aiStatus: null,
+    mmpxActive: false,
+    imgReady: false,
+    aiAnalysisEnabled: defaults.aiAnalysisEnabled === true,
+  });
   const [cameraOn, setCameraOn] = useState(false);
+  const [editorKey, setEditorKey] = useState(0);
+
+  useLayoutEffect(() => {
+    const draft = loadNewTestDraft();
+    if (draft) {
+      setImageSrc(draft.imageSrc);
+      setImgDim(draft.imgDim);
+      setSampleDescription(draft.sampleDescription);
+      setSampleDiameter(draft.sampleDiameter);
+      setBatchNumber(draft.batchNumber);
+      setMfgDate(draft.mfgDate);
+      setTesterName(draft.testerName);
+      setTestDate(draft.testDate || todayIso());
+      setTestTime(draft.testTime || timeNowHHMM());
+      setObservations(draft.observations);
+      setGeometry(draft.geometry);
+      setResult(draft.result);
+      setEditorState({
+        inner: draft.geometry?.inner ?? null,
+        outer: draft.geometry?.outer ?? null,
+        diam: draft.geometry?.diam ?? null,
+      });
+      if (draft.imageSrc || draft.geometry) {
+        setAnalysisMounted(true);
+      }
+    }
+    setDraftReady(true);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    saveNewTestDraft({
+      imageSrc,
+      imgDim,
+      sampleDescription,
+      sampleDiameter,
+      batchNumber,
+      mfgDate,
+      testerName,
+      testDate,
+      testTime,
+      observations,
+      geometry,
+      result,
+    });
+  }, [
+    draftReady,
+    imageSrc,
+    imgDim,
+    sampleDescription,
+    sampleDiameter,
+    batchNumber,
+    mfgDate,
+    testerName,
+    testDate,
+    testTime,
+    observations,
+    geometry,
+    result,
+  ]);
 
   const handleFile = useCallback((file: File) => {
     const url = URL.createObjectURL(file);
@@ -146,6 +238,14 @@ export function NewTestClient({ defaults }: { defaults: Defaults }) {
     setCameraOn(false);
   }, []);
 
+  const validateSampleInfo = useCallback(() => {
+    if (!sampleDescription.trim()) return "Enter Sample Description.";
+    if (!sampleDiameter || Number(sampleDiameter) <= 0) return "Enter a valid Sample Diameter (mm).";
+    if (!batchNumber.trim()) return "Enter Batch Number.";
+    if (!mfgDate) return "Select MFG Date.";
+    return null;
+  }, [sampleDescription, sampleDiameter, batchNumber, mfgDate]);
+
   const captureFromCamera = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -168,11 +268,11 @@ export function NewTestClient({ defaults }: { defaults: Defaults }) {
       setToast({ kind: "err", text: "Place inner and outer rings, then enter sample diameter." });
       return;
     }
-    if (!sampleDiameter || Number(sampleDiameter) <= 0) {
-      setToast({ kind: "err", text: "Enter a valid Sample diameter d (mm)." });
+    const sampleError = validateSampleInfo();
+    if (sampleError) {
+      setToast({ kind: "err", text: sampleError });
       return;
     }
-    // Save the exact visible editor canvas as report image.
     const annotated = editorSnapshotRef.current?.() ?? null;
     if (!annotated) {
       setToast({ kind: "err", text: "Could not capture editor screenshot. Please try again." });
@@ -182,10 +282,10 @@ export function NewTestClient({ defaults }: { defaults: Defaults }) {
     const analysisResults: AnalysisResults = {
       sample_diameter_mm: Number(sampleDiameter),
       mm_per_px:
-        defaults.mmPerPxOverride && defaults.mmPerPxOverride > 0
-          ? defaults.mmPerPxOverride
-          : editorState.diam
-            ? Number(sampleDiameter) / ((editorState.diam.w + editorState.diam.h) / 2)
+        editorMetrics.mmPerPx > 0
+          ? editorMetrics.mmPerPx
+          : defaults.mmPerPxOverride && defaults.mmPerPxOverride > 0
+            ? defaults.mmPerPxOverride
             : 0,
       inner_circle: editorState.inner,
       outer_circle: editorState.outer,
@@ -226,6 +326,23 @@ export function NewTestClient({ defaults }: { defaults: Defaults }) {
       });
       if (res.ok) {
         setToast({ kind: "ok", text: "Saved to your account." });
+        clearNewTestDraft();
+        setImageSrc(null);
+        setImgDim({ w: 0, h: 0 });
+        setResult(null);
+        setGeometry(null);
+        setEditorState({ inner: null, outer: null, diam: null });
+        setSampleDescription("");
+        setSampleDiameter("");
+        setBatchNumber("");
+        setMfgDate("");
+        setObservations("");
+        setTestDate(todayIso());
+        setTestTime(timeNowHHMM());
+        setEditorKey((k) => k + 1);
+        setResultsOpen(false);
+        setAnalysisOpen(false);
+        setAnalysisMounted(false);
       } else {
         setToast({ kind: "err", text: res.error });
       }
@@ -243,8 +360,8 @@ export function NewTestClient({ defaults }: { defaults: Defaults }) {
     testTime,
     observations,
     defaults,
-    imgDim,
-    testerName,
+    editorMetrics.mmPerPx,
+    validateSampleInfo,
   ]);
 
   const deleteImage = useCallback(() => {
@@ -252,7 +369,9 @@ export function NewTestClient({ defaults }: { defaults: Defaults }) {
     setImageSrc(null);
     setImgDim({ w: 0, h: 0 });
     setResult(null);
+    setGeometry(null);
     setEditorState({ inner: null, outer: null, diam: null });
+    setEditorKey((k) => k + 1);
   }, [stopCamera]);
 
   const openSaveDialog = useCallback(() => {
@@ -267,6 +386,31 @@ export function NewTestClient({ defaults }: { defaults: Defaults }) {
     setObservations(observationInput.trim());
     setSaveDialogOpen(false);
   }, [onSave, operatorNameInput, observationInput]);
+
+  const openAnalysis = useCallback(() => {
+    const sampleError = validateSampleInfo();
+    if (sampleError) {
+      setToast({ kind: "err", text: `${sampleError} before analysis.` });
+      return;
+    }
+    setAnalysisMounted(true);
+    setAnalysisOpen(true);
+    setToast(null);
+  }, [validateSampleInfo]);
+
+  const closeAnalysis = useCallback(() => {
+    stopCamera();
+    setResultsOpen(false);
+    setAnalysisOpen(false);
+  }, [stopCamera]);
+
+  const verdictReady = !!result && editorMetrics.thicknessEnabled;
+  const verdictLabel = !verdictReady ? "IN-PROGRESS" : result.overallPass ? "PASS" : "FAIL";
+  const verdictClass = !verdictReady
+    ? "pill-neutral"
+    : result.overallPass
+      ? "pill-pass"
+      : "pill-fail";
 
   return (
     <div className="space-y-4">
@@ -290,18 +434,20 @@ export function NewTestClient({ defaults }: { defaults: Defaults }) {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
-        {/* Left — sample info + analysis */}
-        <aside className="card max-h-[calc(100vh-96px)] space-y-4 overflow-y-auto p-4 xl:sticky xl:top-6">
-          <h2 className="text-sm font-semibold text-white">Sample Information</h2>
-          <Field label="Sample Description">
+      {/* Step 1 — Sample Information + testing slogan */}
+      <div className="grid min-h-[calc(100dvh-5.5rem)] gap-4 lg:grid-cols-[minmax(18rem,26rem)_minmax(0,1fr)] lg:items-stretch">
+        <div className="card h-fit space-y-4 p-4 sm:p-5 lg:sticky lg:top-0">
+          <h2 className="text-base font-semibold text-white">Sample Information</h2>
+          <Field label="Sample Description" required>
             <input
               value={sampleDescription}
               onChange={(e) => setSampleDescription(e.target.value)}
               className="input"
+              placeholder="e.g. TMT ring specimen"
+              required
             />
           </Field>
-          <Field label="Sample Diameter in mm">
+          <Field label="Sample Diameter in mm" required>
             <input
               type="number"
               step="0.01"
@@ -313,91 +459,255 @@ export function NewTestClient({ defaults }: { defaults: Defaults }) {
             />
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Batch Number">
+            <Field label="Batch Number" required>
               <input
                 value={batchNumber}
                 onChange={(e) => setBatchNumber(e.target.value)}
                 className="input"
+                placeholder="e.g. B-001"
+                required
               />
             </Field>
-            <Field label="MFG Date">
+            <Field label="MFG Date" required>
               <input
                 type="date"
                 value={mfgDate}
                 onChange={(e) => setMfgDate(e.target.value)}
                 className="input"
+                required
               />
             </Field>
           </div>
-          <ResultsPanel
-            result={result}
-            editorMetrics={editorMetrics}
-          />
-        </aside>
+          <button type="button" className="btn-primary w-full" onClick={openAnalysis}>
+            Do Analysis
+          </button>
+          <p className="border-t border-[--color-border] pt-3 text-center text-xs leading-relaxed text-[--color-muted] lg:hidden">
+            <span className="font-medium text-slate-300">Measure once. Trust every millimetre.</span>
+            <span className="mt-1 block">IS 1786:2008 ring testing — capture, analyse, report.</span>
+          </p>
+        </div>
 
-        {/* Right — image / camera + ring editor */}
-        <div className="min-w-0 space-y-3">
-          <RingEditor
-            imageSrc={imageSrc}
-            imageWidth={imgDim.w}
-            imageHeight={imgDim.h}
-            sampleDiameterMm={sampleDiameter ? Number(sampleDiameter) : null}
-            mmPerPxOverride={defaults.mmPerPxOverride}
-            angularCorrectionDeg={defaults.angularCorrectionDeg}
-            thicknessOuterGapPx={defaults.thicknessOuterGapPx}
-            thicknessInnerGapPx={defaults.thicknessInnerGapPx}
-            style={defaults.style}
-            onResult={setResult}
-            onStateChange={setEditorState}
-            onMetricsChange={setEditorMetrics}
-            cameraOn={cameraOn}
-            cameraVideoRef={videoRef}
-            onDeleteImage={deleteImage}
-            snapshotRef={editorSnapshotRef}
-            onImageReplace={(nextImageSrc, dims) => {
-              setImageSrc(nextImageSrc);
-              setImgDim(dims);
+        <aside className="relative hidden overflow-hidden rounded-[--radius-card] border border-[--color-border] bg-[#070d18] lg:flex lg:min-h-0 lg:flex-col">
+          <div
+            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-blue-600/15 via-transparent to-cyan-500/10"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute -right-20 top-10 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl motion-safe:animate-pulse"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute -left-16 bottom-8 h-56 w-56 rounded-full bg-cyan-400/10 blur-3xl"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.045]"
+            style={{
+              backgroundImage:
+                "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
+              backgroundSize: "40px 40px",
             }}
-            saveControl={
+            aria-hidden
+          />
+
+          <div className="relative flex flex-1 flex-col justify-center px-8 py-10 xl:px-12 xl:py-12">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-300/90">
+              Ring Test Manager
+            </p>
+            <h2 className="mt-4 max-w-xl text-3xl font-bold tracking-tight text-white xl:text-4xl xl:leading-tight">
+              Measure once.
+              <span className="block text-slate-200">Trust every millimetre.</span>
+            </h2>
+            <p className="mt-4 max-w-lg text-sm leading-relaxed text-slate-400 xl:text-base">
+              From specimen face to IS 1786:2008 verdict — capture, scale, analyse thickness, and
+              leave a report you can stand behind.
+            </p>
+
+            <div className="relative mt-10 h-40 w-40 xl:mt-12 xl:h-48 xl:w-48" aria-hidden>
+              <div className="absolute inset-0 rounded-full border border-blue-400/25" />
+              <div className="absolute inset-[14%] rounded-full border border-cyan-300/30 motion-safe:animate-[spin_28s_linear_infinite]" />
+              <div className="absolute inset-[28%] rounded-full border border-dashed border-white/20" />
+              <div className="absolute inset-[42%] rounded-full bg-gradient-to-br from-blue-500/30 to-cyan-400/10" />
+              <div className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-300 shadow-[0_0_16px_rgba(96,165,250,0.7)]" />
+            </div>
+
+            <p className="mt-8 text-xs tracking-wide text-slate-500">
+              Fill sample details, then continue with{" "}
+              <span className="font-medium text-slate-300">Do Analysis</span>.
+            </p>
+          </div>
+        </aside>
+      </div>
+
+      {/* Step 2 — Analysis window (RingEditor) */}
+      {analysisMounted && draftReady ? (
+        <div
+          className={
+            analysisOpen
+              ? "fixed inset-0 z-40 flex flex-col bg-slate-950"
+              : "hidden"
+          }
+          aria-hidden={!analysisOpen}
+        >
+          <header className="flex shrink-0 flex-col gap-2 border-b border-[--color-border] px-2 py-2 sm:flex-row sm:items-center sm:gap-2 sm:overflow-x-auto sm:px-4">
+            <h2 className="shrink-0 text-sm font-semibold whitespace-nowrap text-white">
+              Do Analysis
+            </h2>
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:ml-auto sm:flex-nowrap sm:gap-2">
+              <button
+                type="button"
+                className="btn-secondary shrink-0 px-2.5 text-xs sm:px-3 sm:text-sm"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload size={14} />
+                Upload
+              </button>
+              {!cameraOn ? (
+                <button
+                  type="button"
+                  className="btn-secondary shrink-0 px-2.5 text-xs sm:px-3 sm:text-sm"
+                  onClick={startCamera}
+                >
+                  <Camera size={14} />
+                  Camera
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="btn-primary shrink-0 px-2.5 text-xs sm:px-3 sm:text-sm"
+                    onClick={captureFromCamera}
+                  >
+                    <Camera size={14} />
+                    Capture
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary shrink-0 px-2.5 text-xs sm:px-3 sm:text-sm"
+                    onClick={stopCamera}
+                  >
+                    <X size={14} />
+                    Stop
+                  </button>
+                </>
+              )}
+              <button
+                type="button"
+                onClick={() => editorToolbarApiRef.current?.openMmpx()}
+                className={
+                  editorToolbar.mmpxActive
+                    ? "btn-secondary shrink-0 px-2.5 text-xs ring-2 ring-cyan-400/70 sm:px-3 sm:text-sm"
+                    : "btn-secondary shrink-0 px-2.5 text-xs sm:px-3 sm:text-sm"
+                }
+              >
+                mm/px
+              </button>
+              {editorToolbar.aiAnalysisEnabled ? (
+                <button
+                  type="button"
+                  onClick={() => editorToolbarApiRef.current?.runAiAnalysis()}
+                  disabled={editorToolbar.detectingAi || !imageSrc || !editorToolbar.imgReady}
+                  className={
+                    editorToolbar.detectingAi
+                      ? "btn-secondary shrink-0 px-2.5 text-xs ring-2 ring-violet-400/70 sm:px-3 sm:text-sm"
+                      : "btn-secondary shrink-0 px-2.5 text-xs sm:px-3 sm:text-sm"
+                  }
+                  title={editorToolbar.aiStatus ?? undefined}
+                  aria-label={editorToolbar.detectingAi ? "AI Analyzing" : "AI Analysis"}
+                >
+                  {editorToolbar.detectingAi ? "AI…" : "AI"}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="btn-primary shrink-0 px-2.5 text-xs sm:px-3 sm:text-sm"
+                onClick={() => setResultsOpen(true)}
+              >
+                Result
+              </button>
+              <button
+                type="button"
+                className="btn-secondary shrink-0 px-2.5 text-xs sm:px-3 sm:text-sm"
+                onClick={closeAnalysis}
+              >
+                <X size={14} />
+                Close
+              </button>
+            </div>
+          </header>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-2 sm:p-3">
+            <RingEditor
+              key={editorKey}
+              imageSrc={imageSrc}
+              imageWidth={imgDim.w}
+              imageHeight={imgDim.h}
+              sampleDiameterMm={sampleDiameter ? Number(sampleDiameter) : null}
+              mmPerPxOverride={defaults.mmPerPxOverride}
+              angularCorrectionDeg={defaults.angularCorrectionDeg}
+              thicknessOuterGapPx={defaults.thicknessOuterGapPx}
+              thicknessInnerGapPx={defaults.thicknessInnerGapPx}
+              style={defaults.style}
+              initialGeometry={geometry}
+              onResult={setResult}
+              onStateChange={setEditorState}
+              onGeometryChange={setGeometry}
+              onMetricsChange={setEditorMetrics}
+              cameraOn={cameraOn}
+              cameraVideoRef={videoRef}
+              onDeleteImage={deleteImage}
+              snapshotRef={editorSnapshotRef}
+              onImageReplace={(nextImageSrc, dims) => {
+                setImageSrc(nextImageSrc);
+                setImgDim(dims);
+              }}
+              aiAnalysisEnabled={defaults.aiAnalysisEnabled === true}
+              hideHeaderToolsInSidebar
+              toolbarApiRef={editorToolbarApiRef}
+              onToolbarStateChange={setEditorToolbar}
+              canvasOverlay={
+                <button
+                  type="button"
+                  className={`${verdictClass} pointer-events-auto cursor-pointer px-3 py-1.5 text-xs font-semibold shadow-lg`}
+                  onClick={() => setResultsOpen(true)}
+                  title="View analysis result"
+                >
+                  {verdictLabel}
+                </button>
+              }
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {/* Step 3 — Results window */}
+      {resultsOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 sm:p-6">
+          <div className="flex max-h-[min(920px,100dvh-1.5rem)] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-[--color-border] bg-slate-950 shadow-2xl">
+            <header className="flex shrink-0 items-center justify-between gap-2 border-b border-[--color-border] px-4 py-3">
+              <h2 className="text-sm font-semibold text-white sm:text-base">Analysis Results</h2>
+              <button type="button" className="btn-ghost" onClick={() => setResultsOpen(false)}>
+                <X size={14} />
+                Close
+              </button>
+            </header>
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              <ResultsPanel result={result} editorMetrics={editorMetrics} />
+            </div>
+            <footer className="flex shrink-0 justify-end gap-2 border-t border-[--color-border] px-4 py-3">
+              <button type="button" className="btn-ghost" onClick={() => setResultsOpen(false)}>
+                Back to Analysis
+              </button>
               <button type="button" disabled={pending} className="btn-primary" onClick={openSaveDialog}>
                 {pending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                 Save Result
               </button>
-            }
-            extraControls={
-              <>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload size={14} />
-                  Upload Image
-                </button>
-                {!cameraOn ? (
-                  <button type="button" className="btn-secondary" onClick={startCamera}>
-                    <Camera size={14} />
-                    Start Camera
-                  </button>
-                ) : (
-                  <>
-                    <button type="button" className="btn-primary" onClick={captureFromCamera}>
-                      <Camera size={14} />
-                      Capture
-                    </button>
-                    <button type="button" className="btn-ghost" onClick={stopCamera}>
-                      <X size={14} />
-                      Stop
-                    </button>
-                  </>
-                )}
-              </>
-            }
-          />
+            </footer>
+          </div>
         </div>
-      </div>
+      ) : null}
+
       {saveDialogOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-xl border border-[--color-border] bg-slate-950 p-4">
             <h3 className="mb-3 text-sm font-semibold text-white">Save Test Result</h3>
             <div className="space-y-3">
@@ -431,10 +741,21 @@ export function NewTestClient({ defaults }: { defaults: Defaults }) {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  required = false,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block">
-      <span className="label mb-1 block">{label}</span>
+      <span className="label mb-1 block">
+        {label}
+        {required ? <span className="ml-1 text-red-300">*</span> : null}
+      </span>
       {children}
     </label>
   );
@@ -472,7 +793,7 @@ function ResultsPanel({
     : Array.from({ length: 8 }, (_, i) => ({ label: `t${i + 1}`, angle_deg: i * 45, thickness_mm: null }));
   const showThickness = !!result && editorMetrics.thicknessEnabled;
   return (
-    <div className="border-t border-[--color-border] pt-4">
+    <div>
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-white">Analysis</h3>
         <span
@@ -495,7 +816,7 @@ function ResultsPanel({
         </div>
         <div className="grid grid-cols-[25%_25%_50%]">
           <div className="border-r border-[--color-border]">
-            {sortedPairs.map((p, i) => (
+            {sortedPairs.map((p) => (
               <div key={p.label} className="border-t border-[--color-border] px-2 py-1 text-slate-200">
                 {p.label.toUpperCase()}
               </div>
@@ -531,6 +852,9 @@ function ResultsPanel({
               TM Area %: {editorMetrics.tmAreaPercent !== null ? `${editorMetrics.tmAreaPercent.toFixed(2)}%` : "----"}
             </div>
             <div className="border-t border-[--color-border] px-2 py-1">
+              mm/px: {editorMetrics.mmPerPx > 0 ? editorMetrics.mmPerPx.toFixed(4) : "----"}
+            </div>
+            <div className="border-t border-[--color-border] px-2 py-1">
               Diameter: {editorMetrics.diameterLineCount === 0
                 ? "----"
                 : editorMetrics.diameterLineCount === 1
@@ -558,4 +882,3 @@ function ResultsPanel({
     </div>
   );
 }
-

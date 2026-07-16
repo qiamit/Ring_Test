@@ -30,6 +30,9 @@ export async function updateSession(request: NextRequest) {
   const isAdminRoute = path.startsWith("/admin");
 
   if (!isLoggedIn && !isPublic) {
+    if (path.startsWith("/api/")) {
+      return NextResponse.json({ ok: false, error: "Not authenticated." }, { status: 401 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("redirectTo", path);

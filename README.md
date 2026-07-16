@@ -6,7 +6,7 @@ Next.js app for IS 1786 ring test measurement workflow, backed by **Firebase** (
 
 - **Next.js 16** (App Router)
 - **Firebase Authentication** (email/password)
-- **Cloud Firestore** (tests, settings, calibrations)
+- **Cloud Firestore** (tests, settings)
 - **Firebase Storage** (`ring-images`, `company-logos`)
 - **Firebase Hosting** (framework-aware deploy)
 

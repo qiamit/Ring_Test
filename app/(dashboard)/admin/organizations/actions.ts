@@ -8,6 +8,7 @@ import {
   deleteOrganization,
   holdOrganization,
   rejectOrganization,
+  setOrganizationAiEnabled,
 } from "@/lib/firebase/organization";
 
 export type OrganizationAction = "approved" | "hold" | "rejected" | "delete";
@@ -81,6 +82,21 @@ export async function deleteOrganizationAction(tenantId: string) {
     return {
       ok: false as const,
       error: err instanceof Error ? err.message : "Delete failed",
+    };
+  }
+}
+
+export async function setOrganizationAiEnabledAction(tenantId: string, enabled: boolean) {
+  const auth = await requireSuperAdmin();
+  if (!auth.ok) return { ok: false as const, error: auth.error };
+  try {
+    await setOrganizationAiEnabled(tenantId, enabled);
+    revalidateAdmin();
+    return { ok: true as const };
+  } catch (err) {
+    return {
+      ok: false as const,
+      error: err instanceof Error ? err.message : "Failed to update AI access",
     };
   }
 }

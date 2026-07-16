@@ -29,7 +29,7 @@ export default async function DashboardLayout({
   const profile = profileSnap.data();
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-dvh overflow-x-clip">
       <Sidebar
         email={user.email}
         fullName={(profile?.full_name as string | undefined) ?? null}
@@ -38,7 +38,7 @@ export default async function DashboardLayout({
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
         <MobileSidebar isSuperAdmin={superAdmin} />
-        <main className="min-w-0 flex-1 overflow-x-hidden p-4 lg:p-6">{children}</main>
+        <main className="min-w-0 flex-1 overflow-x-clip p-3 sm:p-4 lg:p-6">{children}</main>
       </div>
     </div>
   );

@@ -8,9 +8,9 @@ export default function LoginPage({
   searchParams: Promise<{ error?: string; redirectTo?: string }>;
 }) {
   return (
-    <div className="card p-6 shadow-2xl shadow-blue-950/30">
-      <h2 className="mb-1 text-xl font-semibold text-white">Sign In</h2>
-      <p className="mb-5 text-sm text-[--color-muted]">
+    <div className="card p-4 shadow-2xl shadow-blue-950/30 sm:p-6">
+      <h2 className="mb-1 text-lg font-semibold text-white sm:text-xl">Sign In</h2>
+      <p className="mb-4 text-sm text-[--color-muted] sm:mb-5">
         Sign in after your organization has been approved by the Super Admin.
       </p>
       <LoginForm searchParamsPromise={searchParams} />

@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getSessionUser } from "@/lib/firebase/auth-server";
@@ -9,7 +8,7 @@ import type { AnalysisResults } from "@/lib/firebase/types";
 
 import { AutoPrint } from "./auto-print";
 import { DeleteButton } from "./delete-button";
-import { PrintButton } from "./print-button";
+import { ReportShell } from "./report-shell";
 
 type ReportSettings = Awaited<ReturnType<typeof getSettings>>;
 
@@ -52,63 +51,29 @@ export default async function ReportDetailPage({
       designationOrder.indexOf(a.label.toLowerCase()) -
       designationOrder.indexOf(b.label.toLowerCase()),
   );
-  return REPORT_DETAIL_JSX({
-    autoPrint,
-    row,
-    settings,
-    imageUrl,
-    sortedThickness,
-    r,
-  });
-}
-
-function REPORT_DETAIL_JSX(props: {
-  autoPrint: boolean;
-  row: Awaited<ReturnType<typeof getTestById>> & object;
-  settings: Awaited<ReturnType<typeof getSettings>>;
-  imageUrl: string | null;
-  sortedThickness: AnalysisResults["thickness_measurements"];
-  r: AnalysisResults;
-}) {
-  const { autoPrint, row, settings, imageUrl, sortedThickness, r } = props;
-  if (!row) return null;
 
   return (
     <div className="space-y-4">
       {autoPrint ? <AutoPrint /> : null}
-      <div className="card flex flex-col gap-2 px-5 py-4 lg:flex-row lg:items-center lg:justify-between no-print">
-        <div>
-          <Link href="/reports" className="text-xs text-[--color-accent] hover:underline">
-            ← Back to reports
-          </Link>
-          <h1 className="mt-1 text-lg font-semibold text-white">
-            Report — {row.sample_description ?? "Sample"}
-          </h1>
-          <p className="text-sm text-[--color-muted]">
-            {row.test_date} {row.test_time} · Tester {row.tester_name}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <PrintButton />
+      <ReportShell
+        title={`Report — ${row.sample_description ?? "Sample"}`}
+        subtitle={`${row.test_date} ${row.test_time} · Tester ${row.tester_name}`}
+        deleteSlot={
           <DeleteButton
             id={row.id}
             testDate={row.test_date}
             sampleDescription={row.sample_description}
           />
-        </div>
-      </div>
-
-      <article id="printable" className="card p-0">
-        <section className="print-sheet text-black">
-          <ReportPrintBody
-            settings={settings}
-            row={row}
-            imageUrl={imageUrl}
-            sortedThickness={sortedThickness}
-            r={r}
-          />
-        </section>
-      </article>
+        }
+      >
+        <ReportPrintBody
+          settings={settings}
+          row={row}
+          imageUrl={imageUrl}
+          sortedThickness={sortedThickness}
+          r={r}
+        />
+      </ReportShell>
     </div>
   );
 }
@@ -136,7 +101,7 @@ function ReportPrintBody({
   return (
     <>
       <div className="sheet-header">
-        <div className="sheet-title">RING TEST MANAGER</div>
+        <div className="sheet-title report-opt-title">RING TEST MANAGER</div>
         <div className="sheet-header-row">
           <div className="sheet-header-details">
             <div className="sheet-company sheet-company-name">
@@ -146,7 +111,7 @@ function ReportPrintBody({
             <div className="sheet-company">{formatCompanyContact(settings)}</div>
           </div>
           {logoUrl ? (
-            <div className="sheet-header-logo">
+            <div className="sheet-header-logo report-opt-logo">
               <Image
                 src={logoUrl}
                 alt="Company logo"
@@ -276,7 +241,7 @@ function ReportPrintBody({
         </div>
       </div>
 
-      <div className="sheet-image-box">
+      <div className="sheet-image-box report-opt-image">
         {imageUrl ? (
           <Image
             src={imageUrl}
@@ -291,12 +256,8 @@ function ReportPrintBody({
         )}
       </div>
 
-      <div className="sheet-signature-row">
-        <div
-          className="sheet-signature"
-        >
-          Authorized Signatory
-        </div>
+      <div className="sheet-signature-row report-opt-signature">
+        <div className="sheet-signature">Authorized Signatory</div>
       </div>
     </>
   );

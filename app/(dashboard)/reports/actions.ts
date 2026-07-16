@@ -9,7 +9,7 @@ import { deleteStorageObject } from "@/lib/firebase/storage";
 
 export async function deleteTest(id: string) {
   const user = await requireSessionUser();
-  const row = await deleteTestById(id, user.uid);
+  const row = await deleteTestById(id, user.uid, user.email);
   if (!row) return { ok: false, error: "Test not found" } as const;
 
   if (row.image_path) {

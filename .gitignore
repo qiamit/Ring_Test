@@ -86,3 +86,4 @@ temp/
 *.temp
 ~*
 Dummy Data/
+public/local-uploads/

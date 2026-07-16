@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 
-import type { SettingsRecord } from "@/lib/firebase/types";
+import type { AiConfigPublic, SettingsRecord } from "@/lib/firebase/types";
 
+import { AiModelSettings } from "./ai-model-settings";
 import { saveSettings, uploadLogo, type SettingsInput } from "./actions";
 
 type Settings = SettingsRecord;
@@ -18,12 +19,12 @@ const DEFAULTS: Omit<Settings, "user_id" | "updated_at"> = {
   outer_color: "#f472b6",
   diam_color: "#fb923c",
   thick_color: "#4ade80",
-  inner_width: 2,
-  outer_width: 2,
-  diam_width: 2,
-  thick_width: 2,
-  thickness_outer_gap_px: 2,
-  thickness_inner_gap_px: 2,
+  inner_width: 1,
+  outer_width: 1,
+  diam_width: 1,
+  thick_width: 1,
+  thickness_outer_gap_px: 1,
+  thickness_inner_gap_px: 1,
   company_logo_path: null,
   company_name: "",
   company_address: "",
@@ -34,7 +35,15 @@ const DEFAULTS: Omit<Settings, "user_id" | "updated_at"> = {
   tenant_id: null,
 };
 
-export function SettingsForm({ initial }: { initial: Settings | null }) {
+export function SettingsForm({
+  initial,
+  isSuperAdmin = false,
+  aiConfig = null,
+}: {
+  initial: Settings | null;
+  isSuperAdmin?: boolean;
+  aiConfig?: AiConfigPublic | null;
+}) {
   const [pending, startTransition] = useTransition();
   const [toast, setToast] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [showCameraSettings, setShowCameraSettings] = useState(false);
@@ -149,8 +158,8 @@ export function SettingsForm({ initial }: { initial: Settings | null }) {
             Camera Setting
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="mm/px override (0 = use diameter box)">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="mm/px override (fallback if test has no mm/px)">
             <input
               type="number"
               step="0.0001"
@@ -160,15 +169,6 @@ export function SettingsForm({ initial }: { initial: Settings | null }) {
               }
               className="input"
               placeholder="auto"
-            />
-          </Field>
-          <Field label="Angular correction (°)">
-            <input
-              type="number"
-              step="0.1"
-              value={s.angular_correction_deg}
-              onChange={(e) => set("angular_correction_deg", Number(e.target.value))}
-              className="input"
             />
           </Field>
           <Field label="Units">
@@ -220,7 +220,7 @@ export function SettingsForm({ initial }: { initial: Settings | null }) {
               type="number"
               step="0.1"
               value={s.thickness_outer_gap_px}
-              onChange={(e) => set("thickness_outer_gap_px", Number(e.target.value) || 2)}
+              onChange={(e) => set("thickness_outer_gap_px", Number(e.target.value) || 1)}
               className="input"
             />
           </Field>
@@ -229,7 +229,7 @@ export function SettingsForm({ initial }: { initial: Settings | null }) {
               type="number"
               step="0.1"
               value={s.thickness_inner_gap_px}
-              onChange={(e) => set("thickness_inner_gap_px", Number(e.target.value) || 2)}
+              onChange={(e) => set("thickness_inner_gap_px", Number(e.target.value) || 1)}
               className="input"
             />
           </Field>
@@ -292,7 +292,9 @@ export function SettingsForm({ initial }: { initial: Settings | null }) {
         </div>
       </section>
 
-      <div className="lg:col-span-2 flex items-center justify-end gap-3">
+      {isSuperAdmin && aiConfig ? <AiModelSettings initial={aiConfig} /> : null}
+
+      <div className="lg:col-span-2 flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
         {toast ? (
           <span
             className={
@@ -309,9 +311,9 @@ export function SettingsForm({ initial }: { initial: Settings | null }) {
         </button>
       </div>
       {showCameraSettings ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-3xl rounded-xl border border-[--color-border] bg-slate-950 p-4 shadow-xl">
-            <div className="mb-3 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
+          <div className="max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-t-2xl border border-[--color-border] bg-slate-950 p-4 shadow-xl sm:rounded-xl">
+            <div className="mb-3 flex items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-white">Camera Settings</h3>
               <button
                 type="button"
@@ -321,7 +323,7 @@ export function SettingsForm({ initial }: { initial: Settings | null }) {
                 Close
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <Field label="Camera device">
                 <select
                   value={cameraDeviceId}
