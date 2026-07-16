@@ -7,7 +7,8 @@
       "**/.*",
       "**/node_modules/**",
       "Dummy Data/**"
-    ]
+    ],
+    "alwaysDeployFromSource": true
   },
   "firestore": {
     "rules": "firestore.rules",
@@ -18,7 +19,11 @@
   },
   "hosting": {
     "source": ".",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
     "frameworksBackend": {
       "region": "us-central1"
     }
